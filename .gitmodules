@@ -1,0 +1,3 @@
+[submodule "modules/nginx-upstream-dynamic-modules"]
+	path = modules/nginx-upstream-dynamic-modules
+	url = https://github.com/GUI/nginx-upstream-dynamic-servers
