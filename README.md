@@ -6,7 +6,7 @@ This repository also includes niginx-upstream-dynamic-servers [Github](https://g
 
 To use this module in the build you must use --add-module
 ```
-./configure --add-module=/path/to/nginx-upstream-dynamic-servers
+./configure --add-module=../modules/nginx-upstream-dynamic-servers
 make && make install
 ```
 
