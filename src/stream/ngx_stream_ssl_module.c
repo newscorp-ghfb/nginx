@@ -22,6 +22,9 @@ static ngx_int_t ngx_stream_ssl_handler(ngx_stream_session_t *s);
 static ngx_int_t ngx_stream_ssl_init_connection(ngx_ssl_t *ssl,
     ngx_connection_t *c);
 static void ngx_stream_ssl_handshake_handler(ngx_connection_t *c);
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+int ngx_stream_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg);
+#endif
 #ifdef SSL_R_CERT_CB_ERROR
 static int ngx_stream_ssl_certificate(ngx_ssl_conn_t *ssl_conn, void *arg);
 #endif
@@ -414,6 +417,17 @@ ngx_stream_ssl_handshake_handler(ngx_connection_t *c)
 }
 
 
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+
+int
+ngx_stream_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg)
+{
+    return SSL_TLSEXT_ERR_OK;
+}
+
+#endif
+
+
 #ifdef SSL_R_CERT_CB_ERROR
 
 int
@@ -676,11 +690,17 @@ ngx_stream_ssl_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
+        ngx_ssl_cleanup_ctx(&conf->ssl);
         return NGX_CONF_ERROR;
     }
 
     cln->handler = ngx_ssl_cleanup_ctx;
     cln->data = &conf->ssl;
+
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+    SSL_CTX_set_tlsext_servername_callback(conf->ssl.ctx,
+                                           ngx_stream_ssl_servername);
+#endif
 
     if (ngx_stream_ssl_compile_certificates(cf, conf) != NGX_OK) {
         return NGX_CONF_ERROR;
@@ -725,7 +745,7 @@ ngx_stream_ssl_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 
         if (conf->client_certificate.len == 0 && conf->verify != 3) {
             ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                          "no ssl_client_certificate for ssl_client_verify");
+                          "no ssl_client_certificate for ssl_verify_client");
             return NGX_CONF_ERROR;
         }
 
